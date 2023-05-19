@@ -1,0 +1,40 @@
+blueprint:
+  name: Alarm Disarm Service
+  description: Turn off alarm when you are back home
+  domain: automation
+  source_url: https://github.com/IngmarBuchenhain/HomeAutomationFiles/blob/main/alarm_disarm.yaml
+  input:
+    condition_entity:
+      name: Alarm is armed
+      selector:
+        entity:
+          domain: switch
+    light_target:
+      name: Light
+      selector:
+        target:
+          entity:
+            domain: light
+    speaker_target:
+      name: Speaker
+      selector:
+        target:
+          entity:
+            domain: switch
+
+trigger:
+  platform: state
+  entity_id: !input condition_entity
+  from: "on"
+  to: "off"
+
+action:
+  - alias: "Turn off alarm"
+    service: light.turn_off
+    target: !input light_target
+  - alias: "Turn off speaker"
+    service: switch.turn_off
+    target: !input speaker_target
+
+
+

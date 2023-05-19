@@ -1,0 +1,49 @@
+blueprint:
+  name: Alarm Speaker Service
+  description: Turn on alarm speaker when door/window contacts are open and no one is home
+  domain: automation
+  source_url: https://github.com/IngmarBuchenhain/HomeAutomationFiles/blob/main/alarm_speaker.yaml
+  input:
+    trigger_entity:
+      name: Door/Window contact
+      selector:
+        entity:
+          domain: binary_sensor
+    condition_entity:
+      name: Alarm is armed
+      selector:
+        entity:
+          domain: switch
+    speaker_target:
+      name: Speaker
+      selector:
+        target:
+          entity:
+            domain: switch
+
+trigger:
+  platform: state
+  entity_id: !input trigger_entity
+  from: "off"
+  to: "on"
+  
+condition:
+  alias: "Alarm is armed"
+  condition: state
+  entity_id: !input condition_entity
+  state: "on"
+
+action:
+  - repeat:
+      while:
+        - condition: state
+          entity_id: !input condition_entity
+          state: "on"
+      sequence:
+        - service: switch.turn_on
+          target: !input speaker_target
+        - delay:
+            seconds: 2
+
+
+

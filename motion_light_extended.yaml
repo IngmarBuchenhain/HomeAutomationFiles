@@ -1,0 +1,60 @@
+blueprint:
+  name: Motion-activated light when dark
+  description: Turn on a light when motion is detected and its dark.
+  domain: automation
+  source_url: https://github.com/IngmarBuchenhain/HomeAutomationFiles/blob/main/motion_light_extended.yaml
+  input:
+    motion_entity:
+      name: Motion Sensor
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion
+    lumination-entity:
+      name: Lumination Sensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+    light_target:
+      name: Light
+      selector:
+        target:
+          entity:
+            domain: light
+    no_motion_wait:
+      name: Wait time
+      description: Time to leave the light on after last motion is detected.
+      default: 15
+      selector:
+        number:
+          min: 5
+          max: 360
+          unit_of_measurement: seconds
+
+# If motion is detected within the delay,
+# we restart the script.
+mode: restart
+max_exceeded: silent
+
+trigger:
+  platform: state
+  entity_id: !input motion_entity
+  from: "off"
+  to: "on"
+
+condition:
+  alias: "Its dark"
+  condition: numeric_state
+  entity_id: !input lumination-entity
+  below: 70
+
+action:
+  - alias: "Turn on the light"
+    service: light.turn_on
+    target: !input light_target
+  - alias: "Wait the number of seconds that has been set"
+    delay: !input no_motion_wait
+  - alias: "Turn off the light"
+    service: light.turn_off
+    target: !input light_target

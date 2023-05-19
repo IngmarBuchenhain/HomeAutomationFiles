@@ -1,0 +1,41 @@
+blueprint:
+  name: Door Bell Service
+  description: Ring door bell on a binary sensor turn on
+  domain: automation
+  source_url: https://github.com/IngmarBuchenhain/HomeAutomationFiles/blob/main/door_bell.yaml
+  input:
+    door_bell_entity:
+      name: Door Bell
+      selector:
+        entity:
+          domain: binary_sensor
+    speaker_target:
+      name: Speaker
+      selector:
+        target:
+          entity:
+            domain: switch
+
+# If pressed again we restart.
+mode: restart
+max_exceeded: silent
+
+trigger:
+  platform: state
+  entity_id: !input door_bell_entity
+  from: "off"
+  to: "on"
+
+action:
+  - alias: "Ring"
+    service: switch.turn_on
+    target: !input speaker_target
+  - alias: "Wait"
+    delay: 00:00:15
+  - alias: "Turn off ring"
+    service: switch.turn_off
+    target: !input speaker_target
+
+
+
+

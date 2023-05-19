@@ -1,0 +1,49 @@
+blueprint:
+  name: Alarm Light Service
+  description: Turn on alarm light when door/window contacts are open and no one is home
+  domain: automation
+  source_url: https://github.com/IngmarBuchenhain/HomeAutomationFiles/blob/main/alarm_light.yaml
+  input:
+    trigger_entity:
+      name: Door/Window contact
+      selector:
+        entity:
+          domain: binary_sensor
+    condition_entity:
+      name: Alarm is armed
+      selector:
+        entity:
+          domain: switch
+    light_target:
+      name: Alarm Light
+      selector:
+        target:
+          entity:
+            domain: light
+
+trigger:
+  platform: state
+  entity_id: !input trigger_entity
+  from: "off"
+  to: "on"
+  
+condition:
+  alias: "Alarm is armed"
+  condition: state
+  entity_id: !input condition_entity
+  state: "on"
+
+action:
+  - repeat:
+      while:
+        - condition: state
+          entity_id: !input condition_entity
+          state: "on"
+      sequence:
+        - service: light.toggle
+          target: !input light_target
+        - delay:
+            seconds: 0.2
+
+
+

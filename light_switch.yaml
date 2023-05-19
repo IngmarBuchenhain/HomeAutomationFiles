@@ -1,0 +1,30 @@
+blueprint:
+  name: Light Switch
+  description: Turn on light, when physical switch pressed
+  domain: automation
+  source_url: https://github.com/IngmarBuchenhain/HomeAutomationFiles/blob/274ebec530fec66a94186aa26ae0fb8657b54fb9/alarm.yaml
+  input:
+    switch_entity:
+      name: Light switch
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: presence
+    light_target:
+      name: Light
+      selector:
+        target:
+          entity:
+            domain: light
+
+trigger:
+  platform: state
+  entity_id: !input switch_entity
+  from: "off"
+  to: "on"
+
+action:
+  - alias: "Turn on the light"
+    service: light.toggle
+    target: !input light_target
+

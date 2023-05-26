@@ -1,0 +1,123 @@
+esphome:
+  name: ground-floor-entry-room
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "Your_Key"
+
+ota:
+  password: "Your_Key"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Ground-Floor-Entry-Room"
+    password: "Your_Key"
+
+captive_portal:
+    
+# Lights and Heater    
+light:
+  - platform: binary
+    name: "Ground Floor Door Light"
+    output: light_output_door
+  - platform: binary
+    name: "Ground Floor Entry Room Light"
+    output: light_output_entry
+  - platform: neopixelbus
+    id: "gfer_rgb_light"
+    name: "Ground Floor Entry Room Heater"
+    type: GRB
+    variant: WS2812X
+    pin: 13 # D7
+    num_leds: 2
+
+number:
+# Heater Thermostat
+  - platform: template
+    name: Ground Floor Entry Room Thermostat
+    min_value: 5
+    max_value: 25
+    step: 0.5
+    optimistic: true
+    set_action:
+      then:
+        - light.addressable_set:
+            id: "gfer_rgb_light"
+            range_from: 0
+            range_to: 1
+            color_brightness: !lambda 'return x/25.0;'
+            red: !lambda 'return ((x-5)*5)/100.0;'
+            blue: !lambda 'return (100-(x-5)*5)/100.0;'
+            green: 0
+
+# Output for light and speaker
+output:
+  - id: light_output_door
+    platform: gpio
+    pin: GPIO12 # D6
+  - id: light_output_entry
+    platform: gpio
+    pin: GPIO0 # D3
+  - platform: esp8266_pwm
+    pin: GPIO14 # D5
+    id: pwm_output_buzzer_output
+
+# Speaker
+rtttl:
+  output: pwm_output_buzzer_output
+
+# Switches for alarm and speaker
+switch:
+  - platform: gpio
+    pin: 16 #choose a free pin here, just to make ESPHome happy. we do not need it for anything
+    name: "Alarm Armed"
+  - platform: gpio
+    pin: 16 #choose a free pin here, just to make ESPHome happy. we do not need it for anything
+    name: "First Floor Bed Room Speaker Alarm"
+    on_turn_on:
+    - rtttl.play: 'MissionImp:d=16,o=6,b=95:32d,32d#,32d,32d#,32d,32d#,32d,32d#,32d,32d,32d#,32e,32f,32f#,32g,g,8p,g,8p,a#,p,c7,p,g,8p,g,8p,f,p,f#,p,g,8p,g,8p,a#,p,c7,p,g,8p,g,8p,f,p,f#,p,a#,g,2d,32p,a#,g,2c#,32p,a#,g,2c,a#5,8c,2p,32p,a#5,g5,2f#,32p,a#5,g5,2f,32p,a#5,g5,2e,d#,8d'
+    on_turn_off:
+    - rtttl.stop
+  - platform: gpio
+    pin: 16 #choose a free pin here, just to make ESPHome happy. we do not need it for anything
+    name: "First Floor Bed Room Speaker Door Bell"
+    on_turn_on:
+    - rtttl.play: 'tetris:d=4,o=5,b=160:e6,8b,8c6,8d6,16e6,16d6,8c6,8b,a,8a,8c6,e6,8d6,8c6,b,8b,8c6,d6,e6,c6,a,2a,8p,d6,8f6,a6,8g6,8f6,e6,8e6,8c6,e6,8d6,8c6,b,8b,8c6,d6,e6,c6,a,a' 
+    on_turn_off:
+    - rtttl.stop
+
+# Binary sensors (Door bell, door motion, door light switch, door contact)
+binary_sensor:
+  - platform: gpio
+    pin: 5 # D1
+    name: "Ground Floor Door Bell"
+    device_class: motion
+  - platform: gpio
+    pin: 2 # D4
+    name: "Ground Floor Door Motion"
+    device_class: motion
+  - platform: gpio
+    pin: 15 # D8
+    name: "Ground Floor Entry Room Light Switch"
+    device_class: presence
+  - platform: gpio
+    pin:
+      number: GPIO4 # D2
+      inverted: True
+    name: "Ground Floor Door Contact"
+    device_class: door
+    filters:
+      - delayed_on: 10ms
+
+  

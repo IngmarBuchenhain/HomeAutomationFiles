@@ -1,0 +1,114 @@
+# PINs  Komponente
+# 1     RGB-LEDs
+# 2     Heizungs RgbLed
+# 5     Lichtschalter
+# 6     Piezo-Buzzer
+# 0     Hauptbeleuchtung
+
+esphome:
+  name: "og3w-board"
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "HierKoennteIhrKeyStehen="
+
+ota:
+  password: "HierKoennteIhrKeyStehen"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "OG3 Wohnzimmer Fallback Hotspot"
+    password: "HierKoennteIhrKeyStehen"
+
+captive_portal:
+
+binary_sensor:
+# Lichtschalter (Touch)
+  - platform: gpio
+    pin:
+      number: D5
+      mode:
+        input: true
+        pullup: true
+    name: "OG3 Wohnzimmer Lichtschalter"
+    filters:
+      - delayed_off: 50ms
+
+light:
+# Hauptbeleuchtung
+  - platform: binary
+    output: "og3_wohnzimmer_led"
+    name: "OG3 Wohnzimmer Licht"
+    id: "og3_wohnzimmer_licht"
+# RGB-LED
+  - platform: neopixelbus
+    id: "og3_wohnzimmer_rgb_led"
+    name: "OG3 Wohnzimmer RGB-LED"
+    type: GRB
+    variant: WS2812X
+    pin: D1
+    num_leds: 14
+# Heizungs-LED
+  - platform: neopixelbus
+    id: "og3_wohnzimmer_heizungs_led"
+    type: GRB
+    variant: WS2812X
+    pin: D2
+    num_leds: 2
+
+number:
+# Heizung Thermostat
+  - platform: template
+    name: OG3 Wohnzimmer Heizung Thermostat
+    min_value: 5
+    max_value: 25
+    step: 0.5
+    optimistic: true
+    set_action:
+      then:
+        - light.addressable_set:
+            id: og3_wohnzimmer_heizungs_led
+            range_from: 0
+            range_to: 1
+            color_brightness: !lambda 'return x/25.0;'
+            red: !lambda 'return ((x-5)*5)/100.0;'
+            blue: !lambda 'return (100-(x-5)*5)/100.0;'
+            green: 0
+
+switch:
+# Piezo Alarm
+  - platform: output
+    output: og3_wohnzimmer_buzzer_rtttl_out
+    name: "OG3 Wohnzimmer Buzzer"
+    id: "og3_wohnzimmer_buzzer_switch"
+    on_turn_on:
+      then:
+      - rtttl.play: 'Alarm:d=8,o=5,b=100:d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e,d,e'
+    on_turn_off:
+      then:
+      - rtttl.stop
+
+# Piezo Outputdefinition
+rtttl:
+  output: og3_wohnzimmer_buzzer_rtttl_out
+
+output:
+# Hauptbeleuchtung-Output
+  - platform: gpio
+    pin: D0
+    id: "og3_wohnzimmer_led"
+# Buzzer-Output
+  - platform: esp8266_pwm
+    pin: D6
+    id: og3_wohnzimmer_buzzer_rtttl_out

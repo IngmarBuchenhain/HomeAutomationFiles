@@ -1,0 +1,150 @@
+# PINs  Komponente
+# 1,2   Helligkeitssensor
+# 3     Heizungs RgbLed
+# 4     Fensterservo
+# 5     Lichtschalter
+# 6     Bewegungsmelder
+# 7     Reed-Kontakt
+# 8     Hauptbeleuchtung
+# 0     Temperatur und Feuchtigkeitssensor
+
+esphome:
+  name: og3t-board
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "HierKoennteIhrKeyStehen="
+
+ota:
+  password: "HierKoennteIhrKeyStehen"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Og3T-Board Fallback Hotspot"
+    password: "HierKoennteIhrKeyStehen"
+
+captive_portal:
+
+binary_sensor:
+# Bewegungsmelder
+  - platform: gpio
+    pin: D6
+    name: "OG3 Treppenhaus Bewegungsmelder"
+    device_class: motion
+# Lichtschalter (Touch)
+  - platform: gpio
+    pin:
+      number: D5
+      mode:
+        input: true
+        pullup: true
+    name: "OG3 Treppenhaus Lichtschalter"
+    filters:
+      - delayed_off: 50ms
+# Reed-Kontakt
+  - platform: gpio
+    pin: 
+      number: D7
+      inverted: true
+    name: "OG3 Treppenhaus Fenster"
+    device_class: opening
+    filters:
+      - delayed_off: 50ms
+
+light:
+# Hauptbeleuchtung
+  - platform: binary
+    output: "og3_treppenhaus_led"
+    name: "OG3 Treppenhaus Licht"
+    id: "og3_treppenhaus_licht"
+# Heizungs-LED
+  - platform: neopixelbus
+    id: "og3_treppenhaus_heizungs_led"
+    type: GRB
+    variant: WS2812X
+    pin: D3
+    num_leds: 2
+
+# Fensterservo
+servo:
+  - id: og3_treppenhaus_servo
+    output: og3_treppenhaus_pwm_output
+    transition_length: 1s
+
+number:
+# Fensterservo % offen
+  - platform: template
+    name: OG3 Treppenhaus Servo
+    min_value: 0
+    max_value: 100
+    step: 25
+    optimistic: true
+    set_action:
+      then:
+        - servo.write:
+            id: og3_treppenhaus_servo
+            level: !lambda 'return x / 50.0 - 1;'
+# Heizung Thermostat
+  - platform: template
+    name: OG3 Treppenhaus Heizung Thermostat
+    min_value: 5
+    max_value: 25
+    step: 0.5
+    optimistic: true
+    set_action:
+      then:
+        - light.addressable_set:
+            id: og3_treppenhaus_heizungs_led
+            range_from: 0
+            range_to: 1
+            color_brightness: !lambda 'return x/25.0;'
+            red: !lambda 'return ((x-5)*5)/100.0;'
+            blue: !lambda 'return (100-(x-5)*5)/100.0;'
+            green: 0
+
+            
+# Helligkeitssensor
+i2c:
+  scl: D1
+  sda: D2
+  scan: true
+  frequency: 100kHz 
+
+sensor:
+# Helligkeitssensor
+  - platform: bh1750
+    name: "OG3 Treppenhaus Helligkeitssensor"
+    address: 0x23
+    update_interval: 60s
+# Temperatur und Feuchtigkeitssensor
+  - platform: dht
+    pin: D0
+    model: DHT22
+    temperature:
+      name: "OG3 Treppenhaus Temperatur"
+    humidity:
+      name: "OG3 Treppenhaus Luftfeuchtigkeit"
+    update_interval: 60s
+
+output:
+#Hauptbeleuchtung-Output
+  - platform: gpio
+    pin: D8
+    id: "og3_treppenhaus_led"
+#Fensterservo-Output
+  - platform: esp8266_pwm
+    id: og3_treppenhaus_pwm_output
+    pin: D4
+    frequency: 50 Hz
+    

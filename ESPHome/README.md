@@ -1,0 +1,3 @@
+# YAML-Konfigurationsdateien für ESPHome
+
+

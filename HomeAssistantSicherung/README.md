@@ -1,0 +1,2 @@
+# Sicherung von Home Assistant
+
